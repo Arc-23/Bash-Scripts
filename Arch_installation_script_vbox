@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Set keyboard layout
+loadkeys us
+
+# Connect to the internet
+ping -c 3 google.com
+
+# Update system clock
+timedatectl set-ntp true
+
+# Partition the disk
+fdisk /dev/sda
+
+# Format the partitions
+mkfs.ext4 /dev/sda1
+
+# Mount the root partition
+mount /dev/sda1 /mnt
+
+# Install essential packages
+pacstrap /mnt base linux linux-firmware
+
+# Generate fstab file
+genfstab -U /mnt >> /mnt/etc/fstab
+
+# Change root into the new system
+arch-chroot /mnt
+
+# Set time zone
+ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+hwclock --systohc
+
+# Set locale
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
+echo "LANG=en_US.UTF-8" >> /etc/locale.conf
+
+# Set hostname
+echo "archlinux" >> /etc/hostname
+
+# Set root password
+passwd
+
+# Install bootloader
+pacman -S grub efibootmgr
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Exit chroot and reboot the system
+exit
+umount -R /mnt
+reboot
